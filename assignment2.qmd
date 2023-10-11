@@ -1,52 +1,178 @@
 ---
 title: "Assignment 2"
-author: "Your Name"
+author: "Ian Agkpo"
 format: html
 ---
 
-**Overview:** 
+**Overview:**
 
-*For this assignment, you are going to evaluate modernization theory as laid out in Seymour Martin Lipset's [classic article](https://www-jstor-org.proxygw.wrlc.org/stable/1951731?seq=8) entitled "Some Social Requisites of Democracy: Economic Development and Political Legitimacy." How classic is this article? According to Google Scholar, this piece has been cited more than 11.5 thousand times!* 
+*For this assignment, you are going to evaluate modernization theory as laid out in Seymour Martin Lipset's [classic article](https://www-jstor-org.proxygw.wrlc.org/stable/1951731?seq=8) entitled "Some Social Requisites of Democracy: Economic Development and Political Legitimacy." How classic is this article? According to Google Scholar, this piece has been cited more than 11.5 thousand times!*
 
 *We are going to use data from V-Dem and modern data viz tools to explore Lipset's hypothesis that economic modernization is highly correlated with democracy. We have already done this to some extent by looking at the relationship between wealth and the polyarchy score. But we are going to broaden things out by looking at other measures of modernization and democracy contained in the V-Dem dataset.*
 
-*Before starting on this assignment, you will want to have a look at the V-Dem [codebook](https://www.v-dem.net/static/website/img/refs/codebookv111.pdf). Look through the sections titled "V-Dem Indicators" and "Background Factors (E)." There are five democracy indicators, one of which is the polyarchy index. There are a number of background factors, many of which pertain to economic modernization. We are going to be looking at the relationship between these two sets of variables.* 
+*Before starting on this assignment, you will want to have a look at the V-Dem [codebook](https://www.v-dem.net/static/website/img/refs/codebookv111.pdf). Look through the sections titled "V-Dem Indicators" and "Background Factors (E)." There are five democracy indicators, one of which is the polyarchy index. There are a number of background factors, many of which pertain to economic modernization. We are going to be looking at the relationship between these two sets of variables.*
 
 *Now have a look at "Some Social Requisites of Democracy" and in particular pay attention to the indicators in Table II and the discussion surrounding them. Think of each indicator (e.g. urbanization, education, etc.) as a sub-hypothesis of his theory. Which of these sub-hypotheses about modernization do you think is most compelling? Which would you like to test?*
 
 ## Step 1: Gather Your Data
 
-*Use the `vdemdata` package to download data for your analysis. Since we already looked at the polyarchy score and wealth in class, you need to use a different measure of democracy and a different background factor for your analysis. Use a `select()` verb to include country, year, region (`e_regionpol_6C`), at least one of the other four measures of democracy, and one background factor that is not per capita GDP. Store your data in an object called `dem_data`. Pipe in a mutate() verb and use `case_match()` to label the regions. Review [module 1.2](https://dataviz-gwu.rocks/modules/module-1.2.html) if you are confused on how to do this.*
+```{r}
+# 1.1 - gathering data ####
+library(vdemdata)
+library(tidyverse)
+library(dplyr)
+library(countrycode)
+
+dem_data <- vdem |> 
+  select(
+    vdem_ctry_id = country_id,
+    country = country_name,
+    year,
+    region = e_regionpol_6C,
+    vote_buys = v2elvotbuy,
+    edu_ineq = e_peedgini
+    # flfp
+    # background factor 2
+  ) |> 
+  mutate(
+    region = case_match(region, # replace the values in region with names
+                     1 ~ "Eastern Europe", 
+                     2 ~ "Latin America",  
+                     3 ~ "Middle East",   
+                     4 ~ "Africa", 
+                     5 ~ "The West", 
+                     6 ~ "Asia")
+  )
+glimpse(dem_data)
+```
 
 ## Step 2: Make a bar chart
 
-*a) Insert a code chunk below this line and label it. Wrangle your data for the bar chart. Filter by year to include data since 2000, group by region and summarize by mean. Save the new data in an object called `bar_chart_data`.* 
+*a) Insert a code chunk below this line and label it. Wrangle your data for the bar chart. Filter by year to include data since 2000, group by region and summarize by mean. Save the new data in an object called `bar_chart_data`.*
 
-*b) Insert a code chunk below this line and label it. Use `ggplot()` and `geom_col()` to create a bar chart showing levels of democracy across the regions with your wrangled data. Make sure to add appropriate axis labels, a title and a caption. Add a theme to spruce it up a bit.* 
+```{r}
+# 2.1 - Wrangling Bar Chart Data ####
+bar_chart_data <- dem_data |> 
+  filter(year>=2000) |> 
+  group_by(region) |> 
+  summarize(
+    vote_buys = mean(vote_buys, na.rm = TRUE), 
+    edu_ineq= mean(edu_ineq, na.rm = TRUE)
+  )
+  
+```
 
+*b) Insert a code chunk below this line and label it. Use `ggplot()` and `geom_col()` to create a bar chart showing levels of democracy across the regions with your wrangled data. Make sure to add appropriate axis labels, a title and a caption. Add a theme to spruce it up a bit.*
 
-**Note: From here on out I will expect you to know to add a code chunk and label it.**
+```{r}
+# 2.2 - creating the bar chart ####
+
+# Education Inequality
+ggplot(bar_chart_data, aes(x = region, y = edu_ineq)) + # ggplot call
+  geom_col(fill = "green")+
+  labs(
+    x = "Region", 
+    y = "Level of Education Inequality", 
+    title = "Education Inequality by Region, 2000-present", 
+    caption = "Source: V-Dem Institute"
+    )+
+  theme_classic()
+```
 
 ## Step 3: Make a colorblind-friendly line chart
 
 *a) Filter your `dem_data` to include three or four countries of your choosing and create a line chart of your democracy indicator. You can save the data as a new data frame called `dem_data_line` or you can pipe your filtered data directly into `ggplot()`.*
 
+```{r}
+# filtering data for line chart ####
+dem_data_line <- dem_data |> 
+  filter(vdem_ctry_id == c(17, 9, 6, 5))
+
+dem_data_line_chart <- ggplot(dem_data_line, aes(x = year, y = vote_buys, color = country))+
+  geom_line(linewidth = 1)+
+  labs(
+    x = "Year",
+    y = "Vote Buy Score",
+    title = 'Democracy Indicated by Vote Buys',
+    caption = 'Source: V-Dem Institute'
+  )
+
+```
+
 *b) Use `cvdPlot()` to view your chart from the standpoint of someone with red-green color blindness and describe what you see.*
+
+```{r}
+# Color blind view ####
+install.packages("colorBlindness")
+library(colorBlindness)
+
+cvdPlot(dem_data_line_chart)
+# Based on this standpoint, I can see that someone with red-green color blindess would have trouble discerning between Japan and Poland's results.
+```
 
 *c) Add a colorblind-friendly color map using `viridis` or ColorBrewer.*
 
-*d) Run the plot through `cvdPlot()` and describe what you see. Is your plot colorblind friendly?* 
+*d) Run the plot through `cvdPlot()` and describe what you see. Is your plot colorblind friendly?*
+
+```{r}
+# colorblind-friendly color map ####
+
+dem_data_line_chart + scale_color_brewer(palette = "YlGn")
+
+# test####
+cvdPlot(dem_data_line_chart + scale_color_brewer(palette = "YlGn"))
+```
 
 ## Step 4: Make a scatter plot with annotation
 
 *a) Using `dem__data`, filter out a ten year period. This could be the most recent ten years of data or a distinct ten year period that you want to look at. If you choose a recent period, make sure that you have enough data to take an average of ten years. Some of the background variables in V-Dem are not entirely up to date. You can check the availability of the data by looking at the V-Dem codebook or using `glimpse()` or `View()` to look at your data.Group by country and summarize by mean. Save your your data in a new object called `dem_data_scatter`.*
 
+```{r}
+#filter the years and glimpse results ####
+dem_data_scatter <- dem_data |> filter(year<=2012) |> 
+  filter(year>=1992)
+
+glimpse(dem_data_scatter)
+```
+
 *b) Now build a scatter plot with `ggplot2`. Put your modernization-related variable (background variable) on the x-axis and your measure of democracy on the y-axis and color the points by region. Add a trend line with `geom_smooth()`. This could be a linear model or a loess curve. Add appropriate labels and a `viridis` or ColorBrewer color map and change the theme to `theme_minimal`.*
+
+```{r}
+# creating scatter plot####
+
+dem_data_scatterP <- ggplot(dem_data_scatter, aes(x = edu_ineq, y = vote_buys)) + 
+  geom_point(aes(color = region)) +
+  geom_smooth(method = "loess", linewidth = 1) +
+  labs(
+    x= "Education Inequality", # x-axis title
+    y = "Vote Buying Score", # y-axis title
+    title = "Education Inequality and Democracy", # plot title
+    caption = "Source: V-Dem Institute", # caption
+    color = "Region" # legend title
+    )+theme_minimal()
+
+dem_data_scatterP + scale_color_viridis_d(option = 'Plasma')
+```
 
 *c) Add an annotation to your scatter plot using `annotate()` and `geom_vline()` or `geom_hline()`. Your annotation could highlight a particular year or level of democracy that is relevant for your analysis. Explain briefly why you included this annotation*
 
-## Step 5: Make your scatter plot interactive 
+```{r}
+# annotating
+dem_data_scatterP <- dem_data_scatterP + scale_color_viridis_d(option = 'Plasma') 
 
-*a) Make your scatter plot interactive using `ggplotly()`. Make sure that your tooltip includes the information that you want to display to the user.*
+dem_data_scatterP + geom_vline(xintercept=29, linetype="dashed", color = "black", size = 1) + annotate("text", x = 12, y = -1.7, label = "Global average")
 
-*b) Interpret your results. Does your plot show a relationship between the two variables? Which countries are outliers in your analysis? Why do you think they are outliers and how does your explanation relate to Lipset's hypothesis?*  
+# I chose this particular level of education inequality because it's the average across the six regions. It shows that countries above this average have an increasing amount of vote buying. Countries below this average can be seen to have fairer and more responsible elections.
+```
+
+## Step 5: Make your scatter plot interactive
+
+```{r}
+#making the scatter plot interactive####
+install.packages("plotly")
+library(plotly)
+
+ggplotly(dem_data_scatterP + geom_vline(xintercept=29, linetype="dashed", color = "black", size = 1) + annotate("text", x = 12, y = -1.7, label = "Global average"))
+```
+
+*My plot shows a fairly clear correlation between educational inequality and vote buying. The charts and plots here show that a decrease in educational inequality will lessen the likelihood of political votes being bought. Niger in 1992 are a clear outlier with poor educational inequality, but less vote buying and fairer elections. It's the last of four years with very high inequality, but low vote buying. However, the election fairness score drops drastically in the following years showing that high inequality makes what appears to be a good democracy unstable.*
