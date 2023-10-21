@@ -103,7 +103,6 @@ dem_data_line_chart <- ggplot(dem_data_line, aes(x = year, y = vote_buys, color 
 
 ```{r}
 # Color blind view ####
-install.packages("colorBlindness")
 library(colorBlindness)
 
 cvdPlot(dem_data_line_chart)
@@ -169,7 +168,6 @@ dem_data_scatterP + geom_vline(xintercept=29, linetype="dashed", color = "black"
 
 ```{r}
 #making the scatter plot interactive####
-install.packages("plotly")
 library(plotly)
 
 ggplotly(dem_data_scatterP + geom_vline(xintercept=29, linetype="dashed", color = "black", size = 1) + annotate("text", x = 12, y = -1.7, label = "Global average"))
